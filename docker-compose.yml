@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  backend-pg:
+    image: postgres:14.4
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "pivo"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+      timeout: 1s
+      retries: 20
+    volumes:
+      - ./pg/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./pg:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    command: ["postgres", "-c", "log_statement=none"]
+
+  eface-api:
+    build: ./back/
+    depends_on:
+      backend-pg:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    expose:
+      - 3000
+    restart: unless-stopped
+  
+  # frontend-ng:
+  #   build: ./front
+  #   ports:
+  #     - "80:80"
+  #   expose:
+  #     - 80
